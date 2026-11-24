@@ -13,7 +13,9 @@ import {
   Search,
   ShieldCheck,
 } from 'lucide-react';
+import { OfflineIndicator } from './components/OfflineIndicator';
 import { OtterMap } from './components/OtterMap';
+import { PWAInstallButton } from './components/PWAInstallButton';
 import { ReportSightingModal } from './components/ReportSightingModal';
 import { ResilientImage } from './components/ResilientImage';
 import { SightingDetailModal } from './components/SightingDetailModal';
@@ -334,35 +336,39 @@ export default function App() {
 
               <div className="h-7 w-px bg-[#DCE3DA] hidden sm:block" aria-hidden="true" />
 
-              {/* Google Auth Control */}
-              {authReady && (
-                <div>
-                  {user ? (
-                    <div className="flex items-center gap-3">
-                      <span className="text-xs font-medium text-[#141E1A] max-w-[150px] truncate">
-                        {user.displayName || user.email}
-                      </span>
+              {/* Install & Google Auth Controls */}
+              <div className="flex flex-wrap items-center gap-2.5">
+                <PWAInstallButton />
+
+                {authReady && (
+                  <div>
+                    {user ? (
+                      <div className="flex items-center gap-3">
+                        <span className="text-xs font-medium text-[#141E1A] max-w-[150px] truncate">
+                          {user.displayName || user.email}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => void handleSignOut()}
+                          className="px-3.5 py-2 text-xs font-medium text-[#4A5A52] bg-white border border-[#D7E0D6] rounded-xl hover:bg-[#F3F6F3] hover:border-[#B6C5B9] transition-all inline-flex items-center gap-1.5 whitespace-nowrap"
+                        >
+                          <LogOut className="w-3.5 h-3.5" />
+                          <span>Sign Out</span>
+                        </button>
+                      </div>
+                    ) : (
                       <button
                         type="button"
-                        onClick={() => void handleSignOut()}
-                        className="px-3.5 py-2 text-xs font-medium text-[#4A5A52] bg-white border border-[#D7E0D6] rounded-xl hover:bg-[#F3F6F3] hover:border-[#B6C5B9] transition-all inline-flex items-center gap-1.5 whitespace-nowrap"
+                        onClick={() => void handleSignIn()}
+                        className="px-3.5 py-2 text-xs font-medium text-[#141E1A] bg-white border border-[#D7E0D6] rounded-xl shadow-2xs hover:bg-[#F3F6F3] hover:border-[#0D6E59]/50 transition-all inline-flex items-center gap-1.5 whitespace-nowrap"
                       >
-                        <LogOut className="w-3.5 h-3.5" />
-                        <span>Sign Out</span>
+                        <LogIn className="w-3.5 h-3.5 text-[#0D6E59]" />
+                        <span>Sign In to Post</span>
                       </button>
-                    </div>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => void handleSignIn()}
-                      className="px-3.5 py-2 text-xs font-medium text-[#141E1A] bg-white border border-[#D7E0D6] rounded-xl shadow-2xs hover:bg-[#F3F6F3] hover:border-[#0D6E59]/50 transition-all inline-flex items-center gap-1.5 whitespace-nowrap"
-                    >
-                      <LogIn className="w-3.5 h-3.5 text-[#0D6E59]" />
-                      <span>Sign In to Post</span>
-                    </button>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
@@ -797,6 +803,8 @@ export default function App() {
         onCenterOnMap={handleCenterOnSighting}
         onSignIn={handleSignIn}
       />
+
+      <OfflineIndicator />
     </div>
   );
 }

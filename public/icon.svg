@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0F7D65" />
+      <stop offset="100%" stop-color="#094D3E" />
+    </linearGradient>
+    <linearGradient id="water" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8CE0C9" stop-opacity="0.35" />
+      <stop offset="50%" stop-color="#B8F2E2" stop-opacity="0.85" />
+      <stop offset="100%" stop-color="#8CE0C9" stop-opacity="0.35" />
+    </linearGradient>
+  </defs>
+
+  <rect width="512" height="512" rx="112" fill="url(#bg)" />
+
+  <!-- Subtle compass ring -->
+  <circle cx="256" cy="244" r="168" fill="none" stroke="#FFFFFF" stroke-opacity="0.14" stroke-width="6" />
+
+  <!-- Stylized KL River Otter head & shoulders emerging from river ripple -->
+  <g transform="translate(256 248)">
+    <!-- Ears -->
+    <circle cx="-68" cy="-58" r="26" fill="#F4F6F3" />
+    <circle cx="-68" cy="-58" r="13" fill="#0D6E59" opacity="0.35" />
+    <circle cx="68" cy="-58" r="26" fill="#F4F6F3" />
+    <circle cx="68" cy="-58" r="13" fill="#0D6E59" opacity="0.35" />
+
+    <!-- Otter head & neck -->
+    <path
+      d="M -92 64 C -96 4 -78 -86 0 -86 C 78 -86 96 4 92 64 Z"
+      fill="#F4F6F3"
+    />
+
+    <!-- Cheeks / muzzle highlight -->
+    <ellipse cx="0" cy="-6" rx="54" ry="38" fill="#FFFFFF" />
+
+    <!-- Eyes -->
+    <circle cx="-38" cy="-34" r="11" fill="#141E1A" />
+    <circle cx="-41" cy="-37" r="3.5" fill="#FFFFFF" />
+    <circle cx="38" cy="-34" r="11" fill="#141E1A" />
+    <circle cx="35" cy="-37" r="3.5" fill="#FFFFFF" />
+
+    <!-- Nose -->
+    <path
+      d="M -18 -14 C -18 -24 18 -24 18 -14 C 18 -3 7 8 0 8 C -7 8 -18 -3 -18 -14 Z"
+      fill="#141E1A"
+    />
+
+    <!-- Whiskers -->
+    <path d="M -30 -4 L -78 -14 M -30 4 L -82 6 M -28 12 L -74 24" stroke="#0D6E59" stroke-width="5.5" stroke-linecap="round" />
+    <path d="M 30 -4 L 78 -14 M 30 4 L 82 6 M 28 12 L 74 24" stroke="#0D6E59" stroke-width="5.5" stroke-linecap="round" />
+  </g>
+
+  <!-- Klang River wave arcs -->
+  <path
+    d="M 88 336 Q 172 308 256 336 T 424 336"
+    fill="none"
+    stroke="url(#water)"
+    stroke-width="18"
+    stroke-linecap="round"
+  />
+  <path
+    d="M 124 382 Q 190 360 256 382 T 388 382"
+    fill="none"
+    stroke="#FFFFFF"
+    stroke-opacity="0.45"
+    stroke-width="12"
+    stroke-linecap="round"
+  />
+</svg>
