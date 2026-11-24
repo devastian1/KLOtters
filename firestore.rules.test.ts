@@ -1,0 +1,98 @@
+/**
+ * Security Rules Verification Specification for LutraKL Firestore Rules.
+ * Covers the Dirty Dozen adversarial payloads against /sightings, /confirmations, and /comments.
+ */
+export const DIRTY_DOZEN_CASES = [
+  {
+    name: '01. Unauthenticated Create',
+    auth: null,
+    operation: 'create',
+    path: '/sightings/s1',
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '02. Unverified Email Create',
+    auth: { uid: 'u1', token: { email_verified: false } },
+    operation: 'create',
+    path: '/sightings/s1',
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '03. Author Spoofing',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1',
+    payloadOverrides: { authorId: 'u2' },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '04. Shadow Field Injection',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1',
+    payloadOverrides: { isOfficialVerified: true },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '05. Initial Confirmations Tampering',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1',
+    payloadOverrides: { confirmations: 500 },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '06. Out-of-Bounds Coordinate Poisoning',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1',
+    payloadOverrides: { lat: 51.5, lng: -0.1 },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '07. Timestamp Forgery',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1',
+    payloadOverrides: { createdAt: '2020-01-01T00:00:00Z' },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '08. Malicious Photo URI',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1',
+    payloadOverrides: { photoUrl: 'javascript:alert(1)' },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '09. Non-Author Edit',
+    auth: { uid: 'u2', token: { email_verified: true } },
+    operation: 'update',
+    path: '/sightings/s1_owned_by_u1',
+    payloadOverrides: { title: 'Hijacked' },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '10. Non-Atomic Confirmation Boost',
+    auth: { uid: 'u2', token: { email_verified: true } },
+    operation: 'update',
+    path: '/sightings/s1',
+    payloadOverrides: { confirmations: 10 },
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '11. Duplicate Confirmation',
+    auth: { uid: 'u2', token: { email_verified: true } },
+    operation: 'create',
+    path: '/sightings/s1/confirmations/u2',
+    expected: 'PERMISSION_DENIED',
+  },
+  {
+    name: '12. Path Variable Poisoning',
+    auth: { uid: 'u1', token: { email_verified: true } },
+    operation: 'create',
+    path: `/sightings/${'a'.repeat(130)}`,
+    expected: 'PERMISSION_DENIED',
+  },
+] as const;

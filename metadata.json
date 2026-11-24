@@ -1,0 +1,6 @@
+{
+  "name": "LutraKL",
+  "description": "Real-time river otter sighting tracker and photo-sharing community across Kuala Lumpur waterways and lake parks.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

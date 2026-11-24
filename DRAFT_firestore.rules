@@ -1,0 +1,206 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Shared Hardened Primitives
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isSignedIn() {
+      return request.auth != null && request.auth.token.email_verified == true;
+    }
+
+    function isValidPhotoUrl(url) {
+      return url is string &&
+        url.size() >= 1 &&
+        url.size() <= 350000 &&
+        (
+          url.matches('^/src/assets/images/[a-zA-Z0-9_\\-]+\\.jpg$') ||
+          url.matches('^data:image/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$')
+        );
+    }
+
+    function isValidSighting(data) {
+      return data.keys().hasAll([
+        'authorId',
+        'authorName',
+        'title',
+        'species',
+        'count',
+        'activity',
+        'corridor',
+        'locationName',
+        'lat',
+        'lng',
+        'notes',
+        'photoUrl',
+        'confirmations',
+        'visibility',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      data.keys().hasOnly([
+        'authorId',
+        'authorName',
+        'title',
+        'species',
+        'count',
+        'activity',
+        'corridor',
+        'locationName',
+        'lat',
+        'lng',
+        'notes',
+        'photoUrl',
+        'confirmations',
+        'visibility',
+        'createdAt',
+        'updatedAt'
+      ]) &&
+      isValidId(data.authorId) &&
+      data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+      data.title is string && data.title.size() >= 3 && data.title.size() <= 120 &&
+      data.species in ['Smooth-coated Otter', 'Asian Small-clawed Otter', 'Hairy-nosed Otter', 'Unsure'] &&
+      data.count is int && data.count >= 1 && data.count <= 30 &&
+      data.activity in ['Swimming', 'Foraging', 'Basking', 'Grooming', 'Crossing'] &&
+      data.corridor in [
+        'Perdana Botanical Gardens',
+        'Titiwangsa Lake',
+        'Klang River',
+        'Gombak River',
+        'Taman Jaya Lake',
+        'Kepong Metropolitan',
+        'Other KL Waterway'
+      ] &&
+      data.locationName is string && data.locationName.size() >= 2 && data.locationName.size() <= 120 &&
+      data.lat is number && data.lat >= 2.75 && data.lat <= 3.55 &&
+      data.lng is number && data.lng >= 101.30 && data.lng <= 102.00 &&
+      data.notes is string && data.notes.size() <= 600 &&
+      isValidPhotoUrl(data.photoUrl) &&
+      data.confirmations is int && data.confirmations >= 0 && data.confirmations <= 10000 &&
+      data.visibility == 'public' &&
+      data.createdAt is timestamp &&
+      data.updatedAt is timestamp;
+    }
+
+    function isValidConfirmation(data) {
+      return data.keys().hasAll(['userId', 'userName', 'visibility', 'createdAt']) &&
+        data.keys().hasOnly(['userId', 'userName', 'visibility', 'createdAt']) &&
+        isValidId(data.userId) &&
+        data.userName is string && data.userName.size() >= 1 && data.userName.size() <= 80 &&
+        data.visibility == 'public' &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidComment(data) {
+      return data.keys().hasAll(['authorId', 'authorName', 'text', 'visibility', 'createdAt']) &&
+        data.keys().hasOnly(['authorId', 'authorName', 'text', 'visibility', 'createdAt']) &&
+        isValidId(data.authorId) &&
+        data.authorName is string && data.authorName.size() >= 1 && data.authorName.size() <= 80 &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 300 &&
+        data.visibility == 'public' &&
+        data.createdAt is timestamp;
+    }
+
+    match /sightings/{sightingId} {
+      allow get: if isValidId(sightingId) &&
+        (resource.data.visibility == 'public' || (isSignedIn() && resource.data.authorId == request.auth.uid));
+
+      allow list: if resource.data.visibility == 'public';
+
+      allow create: if isSignedIn() &&
+        isValidId(sightingId) &&
+        isValidSighting(incoming()) &&
+        incoming().authorId == request.auth.uid &&
+        incoming().confirmations == 0 &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if isSignedIn() &&
+        isValidId(sightingId) &&
+        isValidSighting(incoming()) &&
+        incoming().authorId == existing().authorId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (
+          // Action 1: Author edits sighting details
+          (
+            existing().authorId == request.auth.uid &&
+            incoming().confirmations == existing().confirmations &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title', 'species', 'count', 'activity', 'corridor', 'locationName',
+              'lat', 'lng', 'notes', 'photoUrl', 'updatedAt'
+            ])
+          ) ||
+          // Action 2: Community spotter confirms sighting atomically
+          (
+            incoming().confirmations == existing().confirmations + 1 &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['confirmations', 'updatedAt']) &&
+            !exists(/databases/$(database)/documents/sightings/$(sightingId)/confirmations/$(request.auth.uid)) &&
+            existsAfter(/databases/$(database)/documents/sightings/$(sightingId)/confirmations/$(request.auth.uid))
+          )
+        );
+
+      allow delete: if isSignedIn() &&
+        isValidId(sightingId) &&
+        existing().authorId == request.auth.uid;
+
+      match /confirmations/{userId} {
+        allow get: if isValidId(sightingId) &&
+          isValidId(userId) &&
+          (resource.data.visibility == 'public' || (isSignedIn() && request.auth.uid == userId));
+
+        allow list: if resource.data.visibility == 'public';
+
+        allow create: if isSignedIn() &&
+          isValidId(sightingId) &&
+          isValidId(userId) &&
+          userId == request.auth.uid &&
+          isValidConfirmation(incoming()) &&
+          incoming().userId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/sightings/$(sightingId)) &&
+          getAfter(/databases/$(database)/documents/sightings/$(sightingId)).data.confirmations ==
+            get(/databases/$(database)/documents/sightings/$(sightingId)).data.confirmations + 1;
+
+        allow update, delete: if false;
+      }
+
+      match /comments/{commentId} {
+        allow get: if isValidId(sightingId) &&
+          isValidId(commentId) &&
+          resource.data.visibility == 'public';
+
+        allow list: if resource.data.visibility == 'public';
+
+        allow create: if isSignedIn() &&
+          isValidId(sightingId) &&
+          isValidId(commentId) &&
+          isValidComment(incoming()) &&
+          incoming().authorId == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/sightings/$(sightingId));
+
+        allow update: if false;
+
+        allow delete: if isSignedIn() &&
+          isValidId(sightingId) &&
+          isValidId(commentId) &&
+          existing().authorId == request.auth.uid;
+      }
+    }
+  }
+}
